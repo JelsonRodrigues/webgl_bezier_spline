@@ -33,6 +33,35 @@ export class CubicBezierCurve extends Curve {
     return res;
   }
 
+  public getPointTangent(t: number): Vec {
+    const t_0 = 0;
+    const t_1 = 1 * Math.pow(t, 0);
+    const t_2 = 2 * Math.pow(t, 1);
+    const t_3 = 3 * Math.pow(t, 2);
+
+    const res = this.coeff_vector[0].mul(t_0)
+    .add(this.coeff_vector[1].mul(t_1))
+    .add(this.coeff_vector[2].mul(t_2))
+    .add(this.coeff_vector[3].mul(t_3));
+
+    return res;
+  }
+
+  public changeControlPoint(index:number, new_point: Vec) {
+    if (index < 0 || index >= this.control_points.length) { return; }
+
+    this.control_points[index] = new_point;
+
+    this.calcCoeffVector(this.control_points[0], this.control_points[1], this.control_points[2], this.control_points[3]);
+  }
+
+  public getControlPointByIndex(index : number) : Vec | null {
+    if (index < 0 || index >= this.control_points.length) {
+      return null;
+    }
+    return this.control_points[index];
+  }
+
   public get getControlPoints() : Array<Vec> {
     return this.control_points;
   }

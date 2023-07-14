@@ -7,6 +7,10 @@ out vec4 outColor;
 
 
 void main() {
-  // outColor = vColor;
-  outColor = vec4(0.9f, 0.04f, 0.04f, 0.58f);
+  if (vColor.r == 0.0 && vColor.g == 0.0 && vColor.b == 0.0) {
+    outColor = vec4(0.9f, 0.04f, 0.04f, 0.58f);
+  }
+  else {
+    outColor = vColor;
+  }
 }

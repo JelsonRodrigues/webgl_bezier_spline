@@ -43,8 +43,7 @@ export class Vec {
     return Math.sqrt(
       this.x * this.x + 
       this.y * this.y + 
-      this.z * this.z + 
-      this.w * this.w
+      this.z * this.z
     );
   }
   

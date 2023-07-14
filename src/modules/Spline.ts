@@ -17,24 +17,21 @@ export class Spline {
   }
 
   public getPoint(t:number) : Vec {
-    const expand_t = t * this.curves.length;
-    let curve_index = 0;
-    let new_t = 0.0;
-
-    if (t >= 1.0){
-      curve_index = this.curves.length - 1;
-      new_t = 1.0;
-    }
-    else if (t < 0.0) {
-      curve_index = 0;
-      new_t = 0.0;
-    }
-    else {
-      curve_index = Math.floor(expand_t);
-      new_t = expand_t - curve_index;
-    }
+    const sanitized_t = Math.abs(t) % 1.0;
+    const expand_t = sanitized_t * this.curves.length;
+    const curve_index = Math.floor(expand_t);
+    const new_t = expand_t - curve_index;
     
     return this.curves[curve_index].getPoint(new_t);
+  }
+
+  public getPointTangent(t:number) : Vec {
+    const sanitized_t = Math.abs(t) % 1.0;
+    const expand_t = sanitized_t * this.curves.length;
+    const curve_index = Math.floor(expand_t);
+    const new_t = expand_t - curve_index;
+    
+    return this.curves[curve_index].getPointTangent(new_t);
   }
 
   public sampleSpline() {
@@ -48,7 +45,30 @@ export class Spline {
     });
   }
   
+  public getCurveByIndex(index:number) : Curve | null {
+    if (index < 0 || index >= this.curves.length) {
+      return null;
+    }
+
+    return this.curves[index];
+  }
+
+  public updateCurve(index:number, new_curve:Curve) {
+    if (index < 0 || index >= this.curves.length) {
+      return;
+    }
+
+    this.curves[index] = new_curve;
+
+    const increment = 1.0 / this.num_points_per_curve;
+    let t = 0.0;
+    for (let i = 0; i <= this.num_points_per_curve; ++i){
+      this.array_points[i + this.num_points_per_curve * index] = this.curves[index].getPoint(t);
+      t += increment;
+    }
+  }
+
   public get getPointsInSpline() : Array<Vec> | null { return this.array_points; }
-  public set setNumPoints(value:number) { this.num_points_per_curve = value; }
+  public set setNumPoints(value:number) { this.num_points_per_curve = value; this.sampleSpline(); }
   
 }
