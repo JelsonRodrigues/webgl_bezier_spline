@@ -1,0 +1,17 @@
+canvas {
+  width: 720px;
+  height: 720px;
+  border-style: solid;
+  border-color: darksalmon;
+  border-radius: 3px;
+  border-width: 2px;
+  padding-left: 0px;
+  padding-right: 0px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+body {
+  background-color: beige;
+}
