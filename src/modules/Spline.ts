@@ -1,8 +1,8 @@
 import {Vec} from "./Vec.js"
-import {Curve} from "./Curve.js"
+import {CubicBezierCurve} from "./CubicBezierCurve.js"
 
 export class Spline {
-  private curves : Array<Curve>;
+  private curves : Array<CubicBezierCurve>;
   private num_points_per_curve : number;
   public array_points : Array<Vec>;
   public array_colors : Array<Vec>;
@@ -14,7 +14,7 @@ export class Spline {
     this.array_colors = new Array(numPoints);
   }
 
-  public addCurve(curve : Curve) {
+  public addCurve(curve : CubicBezierCurve) {
     this.curves.push(curve);
   }
 
@@ -57,7 +57,7 @@ export class Spline {
     });
   }
   
-  public getCurveByIndex(index:number) : Curve | null {
+  public getCurveByIndex(index:number) : CubicBezierCurve | null {
     if (index < 0 || index >= this.curves.length) {
       return null;
     }
@@ -65,7 +65,7 @@ export class Spline {
     return this.curves[index];
   }
 
-  public updateCurve(index:number, new_curve:Curve) {
+  public updateCurve(index:number, new_curve:CubicBezierCurve) {
     if (index < 0 || index >= this.curves.length) {
       return;
     }
@@ -78,6 +78,10 @@ export class Spline {
       this.array_points[i + this.num_points_per_curve * index] = this.curves[index].getPoint(t);
       t += increment;
     }
+  }
+
+  public get getNumCurvesInSpline() : number {
+    return this.curves.length;
   }
 
   public get getPointsInSpline() : Array<Vec> | null { return this.array_points; }

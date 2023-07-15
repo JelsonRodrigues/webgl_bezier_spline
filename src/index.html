@@ -7,15 +7,48 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div>
-    <canvas id="WebGLCanva"></canvas>
-  </div>
-  <div id="textAndInput">
-    <p1 id="tValue">t = 0.0</p1>
-    <div>  
+  <!-- Buttons and text -->
+  <div id="textAndInput" class="split left">
+    <h1>Bézier Spline</h1>
+   
+    <div style="display: flex; align-items: flex-start; margin-top: 25px;">
+      <button id="buttonAddCurve">Add Curve</button>
+      <input type="color" id="curvePointsColor" value="#ff0000">
+    </div>
+    
+    <div id="controlWhatIsDrawn" style="margin-top: 25px;">
+      <input type="checkbox" id="drawControlPoints" checked>
+      <label for="drawControlPoints">Draw Control Points</label>
+      <br>
+      <input type="checkbox" id="drawControlLines" checked>
+      <label for="drawControlLines">Draw Control Lines</label>
+    </div>
+
+    <div style="margin-top: 25px;">
+      <button id="turnG0Continuous">Turn G0 Continuous</button>
+      <button id="turnG1Continuous">Turn G1 Continuous</button>
+    </div>
+
+
+    
+    <div id="animationSettings" style="margin-top: 25px;">  
+    <input type="checkbox" id="animateCheckbox">
+    <label for="animateCheckbox">Animate</label>
+    <div id="optionsAnimation">
+      <p1 id="tValue">t = 0.0</p1>
+      <div>
         <input type="range" name="t2_speed" id="speed_multiplier" min="0.0" max="5.0" value="1.41" step="0.1">
         <label for="speed_multiplier">1.41 speed multiplier</label>
+      </div>
+      </div>
     </div>
+
   </div>
+
+  <!-- Canvas -->
+  <div class="split right">
+    <canvas id="WebGLCanva"></canvas>
+  </div>
+
 </body>
 </html>

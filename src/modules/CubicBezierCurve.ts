@@ -1,14 +1,12 @@
 import {Vec} from "./Vec.js"
-import {Curve} from "./Curve.js"
 
-export class CubicBezierCurve extends Curve {
+export class CubicBezierCurve {
   private control_points : Array<Vec>;
   private coeff_vector : [Vec, Vec, Vec, Vec];
   private control_points_color : Array<Vec>;
   private coeff_vector_color : [Vec, Vec, Vec, Vec];
 
   constructor (P0 : Vec, P1: Vec, P2: Vec, P3: Vec, P0_c : Vec, P1_c : Vec, P2_c : Vec, P3_c : Vec) {
-    super();
     this.control_points = new Array(P0, P1, P2, P3);
     this.control_points_color = new Array(P0_c, P1_c, P2_c, P3_c);
     this.coeff_vector = [new Vec(), new Vec(), new Vec(), new Vec()];
@@ -90,5 +88,9 @@ export class CubicBezierCurve extends Curve {
 
   public get getControlPoints() : Array<Vec> {
     return this.control_points;
+  }
+
+  public get getControlPointsColor() : Array<Vec> {
+    return this.control_points_color;
   }
 }
