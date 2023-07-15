@@ -4,12 +4,14 @@ import {Curve} from "./Curve.js"
 export class Spline {
   private curves : Array<Curve>;
   private num_points_per_curve : number;
-  private array_points : Array<Vec>;
+  public array_points : Array<Vec>;
+  public array_colors : Array<Vec>;
   
   constructor (numPoints : number = 150) {
     this.num_points_per_curve = numPoints;
     this.curves = new Array();
     this.array_points = new Array(numPoints);
+    this.array_colors = new Array(numPoints);
   }
 
   public addCurve(curve : Curve) {
@@ -23,6 +25,15 @@ export class Spline {
     const new_t = expand_t - curve_index;
     
     return this.curves[curve_index].getPoint(new_t);
+  }
+
+  public getColorInPoint(t:number) : Vec {
+    const sanitized_t = Math.abs(t) % 1.0;
+    const expand_t = sanitized_t * this.curves.length;
+    const curve_index = Math.floor(expand_t);
+    const new_t = expand_t - curve_index;
+    
+    return this.curves[curve_index].getColorInPoint(new_t);
   }
 
   public getPointTangent(t:number) : Vec {
@@ -40,6 +51,7 @@ export class Spline {
       let t = 0.0;
       for (let i = 0; i <= this.num_points_per_curve; ++i){
         this.array_points[i + this.num_points_per_curve * index] = curve.getPoint(t);
+        this.array_colors[i + this.num_points_per_curve * index] = curve.getColorInPoint(t);
         t += increment;
       }
     });

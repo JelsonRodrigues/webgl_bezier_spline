@@ -3,259 +3,347 @@ import {Vec} from "./modules/Vec.js"
 import {Spline} from "./modules/Spline.js"
 import {CubicBezierCurve} from "./modules/CubicBezierCurve.js"
 
-var gl:WebGL2RenderingContext;
-var canvas:HTMLCanvasElement;
-var gl_drawing_primitive = WebGL2RenderingContext.LINE_STRIP;
-var program_current:WebGLProgram|null = null;
-var spline_poits_gl_buffer:WebGLBuffer;
-var spline_vertices = 0;
-var control_points_gl_buffer:WebGLBuffer;
-var control_points_vertices = 0;
-var animate_point:boolean = true;
-var index_changing = 0;
-var pointSize = 10.0;
+
+class HTMLElements {
+  public canvas : HTMLCanvasElement;
+  public value_t : HTMLParagraphElement;
+  public speed_t2 : HTMLInputElement;
+
+  constructor () {
+    this.canvas = document.getElementById("WebGLCanva") as HTMLCanvasElement;
+    this.value_t = document.getElementById("tValue") as HTMLParagraphElement;
+    this.speed_t2 = document.getElementById("speed_multiplier") as HTMLInputElement;
+  }
+}
+
+class GL {
+  // Context
+  public context : WebGL2RenderingContext;
+  
+  // Program
+  public program : WebGLProgram;
+  public a_position : number;
+  public a_color : number;
+  public u_pointSize : WebGLUniformLocation;
+  
+  // Buffers
+  public buffer_points_in_spline : WebGLBuffer;
+  public buffer_control_points : WebGLBuffer;
+  public buffer_moving_points : WebGLBuffer;
+  
+  // Vertices ammount
+  public num_vertices_points_in_spline : number = 0;
+  public num_vertices_control_points : number = 0;
+  public num_vertices_moving_points : number = 0;
+  
+  // Drawing Primitives
+  public drawing_points_in_spline : number = WebGL2RenderingContext.LINE_STRIP;
+  
+  constructor (context : WebGL2RenderingContext, vertexShaderSource:string, fragmentShaderSource:string) {
+    this.context = context;
+    context.clearColor(0.0, 0.0, 0.0, 1.0);
+    context.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
+
+    //  Create and compile each shader
+    const vertexShader = WebGLUtils.createShader(this.context, WebGL2RenderingContext.VERTEX_SHADER, vertexShaderSource) as WebGLShader;
+    const fragmentShader = WebGLUtils.createShader(this.context, WebGL2RenderingContext.FRAGMENT_SHADER, fragmentShaderSource) as WebGLShader;
+
+    // Use the compiled shaders to create a WebGL program
+    this.program = WebGLUtils.createProgram(this.context, vertexShader, fragmentShader) as WebGLProgram;
+
+    // Get information about the location of variables in the program
+    this.context.useProgram(this.program);
+    this.a_position = this.context.getAttribLocation(this.program, "position");
+    this.a_color = this.context.getAttribLocation(this.program, "color");
+    this.u_pointSize = this.context.getUniformLocation(this.program, "pointSize") as WebGLUniformLocation;
+
+    // Setup the buffers
+    this.buffer_points_in_spline = this.context.createBuffer() as WebGLBuffer;
+    this.buffer_control_points = this.context.createBuffer() as WebGLBuffer;
+    this.buffer_moving_points = this.context.createBuffer() as WebGLBuffer;
+  }
+
+  public drawSpline() {
+    this.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.buffer_points_in_spline);
+
+    this.context.enableVertexAttribArray(this.a_position);
+    this.context.enableVertexAttribArray(this.a_color);
+    this.context.uniform1f(this.u_pointSize, 8.0);
+
+    this.context.vertexAttribPointer(
+      this.a_position, 
+      2, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      0 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.vertexAttribPointer(
+      this.a_color, 
+      3, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.drawArrays(this.drawing_points_in_spline, 0, this.num_vertices_points_in_spline);
+  }
+
+  public drawControlPoints() {
+    this.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.buffer_control_points);
+
+    this.context.enableVertexAttribArray(this.a_position);
+    this.context.enableVertexAttribArray(this.a_color);
+    this.context.uniform1f(this.u_pointSize, 10.0);
+
+    this.context.vertexAttribPointer(
+      this.a_position, 
+      2, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      0 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.vertexAttribPointer(
+      this.a_color, 
+      3, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.drawArrays(WebGL2RenderingContext.POINTS, 0, this.num_vertices_control_points);
+  }
+
+  public drawMovingPoint() {
+    this.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.buffer_moving_points);
+
+    this.context.enableVertexAttribArray(this.a_position);
+    this.context.enableVertexAttribArray(this.a_color);
+    this.context.uniform1f(this.u_pointSize, 12.0);
+
+    this.context.vertexAttribPointer(
+      this.a_position, 
+      2, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      10 * Float32Array.BYTES_PER_ELEMENT, 
+      0 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.vertexAttribPointer(
+      this.a_color, 
+      3, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      10 * Float32Array.BYTES_PER_ELEMENT, 
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.drawArrays(WebGL2RenderingContext.POINTS, 0, this.num_vertices_moving_points);
+
+    this.context.vertexAttribPointer(
+      this.a_position, 
+      2, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      0 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.vertexAttribPointer(
+      this.a_color, 
+      3, 
+      WebGL2RenderingContext.FLOAT, 
+      false, 
+      5 * Float32Array.BYTES_PER_ELEMENT, 
+      2 * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    this.context.drawArrays(WebGL2RenderingContext.LINES, 0, this.num_vertices_moving_points * 2.0);
+  }
+}
+
+class SplineControl {
+  public spline: Spline;
+  public index_altering : number = 0;
+
+  constructor (spline: Spline = new Spline(128)) {
+    this.spline = spline;
+  }
+}
+
+var vHTMLElements: HTMLElements;
+var vGL: GL;
+var vSplineControl : SplineControl;
+var animate_point = true;
 
 var control_points = new Array(
-  {"point" : new Vec(0.0, 0.6), "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.4, 0.4), "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.4, 0.0), "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.2, -0.2), "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.0, -0.4), "color" : new Vec(0.0, 0.0, 1.0)},
+  {"point" : new Vec(0.0, 0.6),   "color" : new Vec(1.0, 0.0, 0.0)},
+  {"point" : new Vec(0.4, 0.4),   "color" : new Vec(1.0, 0.0, 0.0)},
+  {"point" : new Vec(0.4, 0.0),   "color" : new Vec(1.0, 0.0, 0.0)},
+  {"point" : new Vec(0.2, -0.2),  "color" : new Vec(1.0, 0.0, 0.0)},
+
+  {"point" : new Vec(0.2, -0.2),  "color" : new Vec(0.0, 0.0, 1.0)},
+  {"point" : new Vec(0.0, -0.4),  "color" : new Vec(0.0, 0.0, 1.0)},
   {"point" : new Vec(-0.4, -0.4), "color" : new Vec(0.0, 0.0, 1.0)},
-  {"point" : new Vec(-0.6, 0.0), "color" : new Vec(0.0, 0.0, 1.0)},
-  {"point" : new Vec(-0.6, 0.4), "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.9, 0.4), "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.7, 0.7), "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.4, 0.9), "color" : new Vec(0.5, 0.0, 0.5)},
-  {"point" : new Vec(-0.4, 0.6), "color" : new Vec(0.5, 0.0, 0.5)},
-  {"point" : new Vec(-0.0, 0.6), "color" : new Vec(0.5, 0.0, 0.5)},
+  {"point" : new Vec(-0.6, 0.0),  "color" : new Vec(0.0, 0.0, 1.0)},
+
+  {"point" : new Vec(-0.6, 0.0),  "color" : new Vec(0.0, 1.0, 0.0)},
+  {"point" : new Vec(-0.6, 0.4),  "color" : new Vec(0.0, 1.0, 0.0)},
+  {"point" : new Vec(-0.9, 0.4),  "color" : new Vec(0.0, 1.0, 0.0)},
+  {"point" : new Vec(-0.7, 0.7),  "color" : new Vec(0.0, 1.0, 0.0)},
+  
+  {"point" : new Vec(-0.7, 0.7),  "color" : new Vec(0.5, 0.0, 0.5)},
+  {"point" : new Vec(-0.4, 0.9),  "color" : new Vec(0.5, 0.0, 0.5)},
+  {"point" : new Vec(-0.4, 0.6),  "color" : new Vec(0.5, 0.0, 0.5)},
+  {"point" : new Vec(-0.0, 0.6),  "color" : new Vec(0.5, 0.0, 0.5)},
 );
 
 async function main() {
-  let canva:HTMLCanvasElement|null  = document.getElementById("WebGLCanva") as HTMLCanvasElement;
-  if (!canva) {
-    throw new Error("Unable to find the canvas");
-  }
-  canvas = canva;
-  let context = canva.getContext("webgl2");
-  if (!context) {
-    throw new Error ("Unable to get the WebGL context for the canvas");
-  }
-  gl = context;
+  const vsSource = await WebGLUtils.readFile("./shaders/vertexShader.glsl");
+  const fsSource = await WebGLUtils.readFile("./shaders/fragmentShader.glsl");
+  
+  vHTMLElements = new HTMLElements();
+  vGL = new GL(vHTMLElements.canvas.getContext("webgl2") as WebGL2RenderingContext, vsSource, fsSource);
+  vSplineControl = new SplineControl();
 
+  setupEventHandlers();
   resizeHandler();
+  vGL.context.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
 
-  await setupShaders();
-  // Create the buffers in GPU
-  const spline_buf = gl.createBuffer();
-  if (spline_buf){
-    spline_poits_gl_buffer = spline_buf;
-  }
-  const ctrlpts_buf = gl.createBuffer();
-  if (ctrlpts_buf){
-    control_points_gl_buffer = ctrlpts_buf;
+  for (let i = 0; i < control_points.length / 4; ++i) {
+    if (i + 3 >= control_points.length) { break; } 
+    vSplineControl.spline.addCurve(
+      new CubicBezierCurve(
+        control_points[i * 4 + 0].point,
+        control_points[i * 4 + 1].point,
+        control_points[i * 4 + 2].point,
+        control_points[i * 4 + 3].point,
+
+        control_points[i * 4 + 0].color,
+        control_points[i * 4 + 1].color,
+        control_points[i * 4 + 2].color,
+        control_points[i * 4 + 3].color,
+      )
+    );
   }
 
-  const spline = createSpline();
-  drawSpline(spline, spline_poits_gl_buffer);
-  drawControlPoints(control_points_gl_buffer);
-  animate(spline);
+  // Fill the GPU Buffers
+  vSplineControl.spline.sampleSpline();
+
+  let bufferDataSplinePoints = new Float32Array(vSplineControl.spline.array_points.length * 5.0);
+
+  for (let i = 0; i < vSplineControl.spline.array_points.length; ++i) {
+    bufferDataSplinePoints[i * 5 + 0] = vSplineControl.spline.array_points[i].x;
+    bufferDataSplinePoints[i * 5 + 1] = vSplineControl.spline.array_points[i].y;
+
+    bufferDataSplinePoints[i * 5 + 2] = vSplineControl.spline.array_colors[i].x;
+    bufferDataSplinePoints[i * 5 + 3] = vSplineControl.spline.array_colors[i].y;
+    bufferDataSplinePoints[i * 5 + 4] = vSplineControl.spline.array_colors[i].z;
+  }
+
+  vGL.num_vertices_points_in_spline = vSplineControl.spline.array_points.length;
+  vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_points_in_spline);
+  vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, bufferDataSplinePoints, WebGL2RenderingContext.STATIC_DRAW);
+
+  // Fill control points
+  let bufferDataControlPoints = new Float32Array(control_points.length * 5.0);
+  for (let i = 0; i < control_points.length; ++i) {
+    bufferDataControlPoints[i * 5 + 0] = control_points[i].point.x;
+    bufferDataControlPoints[i * 5 + 1] = control_points[i].point.y;
+
+    bufferDataControlPoints[i * 5 + 2] = control_points[i].color.x;
+    bufferDataControlPoints[i * 5 + 3] = control_points[i].color.y;
+    bufferDataControlPoints[i * 5 + 4] = control_points[i].color.z;
+  }
+  vGL.num_vertices_control_points = control_points.length;
+  vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_control_points);
+  vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, bufferDataControlPoints, WebGL2RenderingContext.STATIC_DRAW);
+
+  // Draw
+  vGL.drawSpline();
+  vGL.drawControlPoints();
+  
+  animate();
+}
+
+async function setupEventHandlers() {
+  vHTMLElements.speed_t2.addEventListener("input", (event) => {
+    console.log(event);
+    const element = event.target as HTMLInputElement;
+    if (element.labels){
+      element.labels[0].innerText = `${parseFloat(element.value).toFixed(2)} speed multiplier`;
+    }
+  });
 }
 
 function resizeHandler() {
   let new_width_canvas = window.innerWidth - window.innerWidth * 0.05;
   let new_height_canvas = window.innerHeight - window.innerHeight * 0.05;
   canvasResize(new_width_canvas, new_height_canvas);
-  gl.viewport(0, 0, new_width_canvas, new_height_canvas);
+  vGL.context.viewport(0, 0, new_width_canvas, new_height_canvas);
 }
 
 function canvasResize(width:number, height:number){
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  vHTMLElements.canvas.width = width;
+  vHTMLElements.canvas.height = height;
+  vHTMLElements.canvas.style.width = `${width}px`;
+  vHTMLElements.canvas.style.height = `${height}px`;
 }
 
-async function setupShaders() {  
-  // Read the source code from the shaders
-  const vsSource = await WebGLUtils.readFile("./shaders/vertexShader.glsl");
-  const fsSource = await WebGLUtils.readFile("./shaders/fragmentShader.glsl");
-
-  // Create and compile each shader
-  const vertexShader = WebGLUtils.createShader(gl, WebGL2RenderingContext.VERTEX_SHADER, vsSource);
-  const fragmentShader = WebGLUtils.createShader(gl, WebGL2RenderingContext.FRAGMENT_SHADER, fsSource);
-
-  if (!vertexShader || !fragmentShader) {
-    throw new Error("Error creating the Shaders!!!");
-  }
-
-  // Use the compiled shaders to create a WebGL program
-  const program = WebGLUtils.createProgram(gl, vertexShader, fragmentShader);
-  gl.useProgram(program);
-  if (!program) return;
-  program_current = program;
-  
-  // Set the size of a point
-  const uniform_location = gl.getUniformLocation(program, "pointSize");
-  gl.uniform1f(uniform_location, pointSize);
-
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
-}
-
-function createSpline(sample_points_per_curve:number = 128){
-  let spline = new Spline(sample_points_per_curve);
-
-  for (let index = 0; index < control_points.length; index += 3){
-    if (index + 3 >= control_points.length) { break; }
-    let bezier = new CubicBezierCurve(
-      control_points[index + 0].point, 
-      control_points[index + 1].point, 
-      control_points[index + 2].point, 
-      control_points[index + 3].point
-    );
-
-    spline.addCurve(bezier);
-  }
-
-  spline.sampleSpline();
-
-  return spline;
-}
-
-function drawSpline(spline:Spline, buffer:WebGLBuffer) {
-  const points = spline.getPointsInSpline;
-  if (!points) {
-    throw new Error("Error getting the points in the spline!!!");
-  }
-  const vertices = points.length;
-  spline_vertices = vertices;
-  const vertexData = new Float32Array(points.length * 2);
-  
-  points.forEach((vec, index) => {
-    vertexData[index*2 ] = vec.x;
-    vertexData[index*2 + 1] = vec.y;
-  });
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
-
-  // Get the position location from the program
-  if (program_current){
-    let position = gl.getAttribLocation(program_current, "position");
-    gl.enableVertexAttribArray(position);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  }
-
-  gl.drawArrays(gl_drawing_primitive, 0, vertices);
-}
-
-function drawControlPoints(buffer : WebGLBuffer) {
-  const points = control_points;
-  if (!points) {
-    throw new Error("Error getting the control points!!!");
-  }
-  const vertices = points.length;
-  control_points_vertices = vertices;
-  const vertexData = new Float32Array(points.length * 5);
-  
-  points.forEach((value, index) => {
-    vertexData[index*5 + 0] = value.point.x;
-    vertexData[index*5 + 1] = value.point.y;
-    vertexData[index*5 + 2] = value.color.x;
-    vertexData[index*5 + 3] = value.color.y;
-    vertexData[index*5 + 4] = value.color.z;
-  });
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
-
-  // Get the position location from the program
-  if (program_current){
-    let position = gl.getAttribLocation(program_current, "position");
-    gl.enableVertexAttribArray(position);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0 * Float32Array.BYTES_PER_ELEMENT);
-
-    let color = gl.getAttribLocation(program_current, "color");
-    gl.enableVertexAttribArray(color);
-    gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 2 * Float32Array.BYTES_PER_ELEMENT);
-  }
-
-  gl.drawArrays(WebGL2RenderingContext.POINTS, 0, vertices);
-}
-
-async function animate(spline:Spline) {
-  if (!program_current) {return;}
-  
-  let position = gl.getAttribLocation(program_current, "position");
-  let color = gl.getAttribLocation(program_current, "color");
-  let pointZise_loc =   gl.getUniformLocation(program_current, "pointSize");
-
-  const pointBuffer = gl.createBuffer();
-
+async function animate() {
   let begin = new Date();
   const time_to_full_lap = 10 * 1000.0; // 10s
   let t = 0.0;
   let t2 = 0.0;
   while (animate_point) {
     const now = new Date();
-    t = (now.getTime() - begin.getTime()) / time_to_full_lap;
-    t2 = (now.getTime() - begin.getTime()) * Math.sqrt(2.0) / time_to_full_lap;
+    const t2_speed = parseFloat(vHTMLElements.speed_t2.value);
+    t = ((now.getTime() - begin.getTime()) / time_to_full_lap) % 1.0;
+    t2 = ((now.getTime() - begin.getTime()) * t2_speed / time_to_full_lap) % 1.0;
     
-    // Clear background
-    gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
+    vHTMLElements.value_t.innerText = `t = ${t.toFixed(2)} t' = ${t2.toFixed(2)}`;
 
-    // Draw spline
-    gl.bindBuffer(gl.ARRAY_BUFFER, spline_poits_gl_buffer);
-    gl.enableVertexAttribArray(position);
-    gl.disableVertexAttribArray(color);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0 * Float32Array.BYTES_PER_ELEMENT);
-    gl.drawArrays(gl_drawing_primitive, 0, spline_vertices);
-  
-    // Draw control Points
-    gl.uniform1f(pointZise_loc, pointSize);
-    gl.bindBuffer(gl.ARRAY_BUFFER, control_points_gl_buffer);
-    gl.enableVertexAttribArray(position);
-    gl.enableVertexAttribArray(color);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0 * Float32Array.BYTES_PER_ELEMENT);
-    gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 2 * Float32Array.BYTES_PER_ELEMENT);
-    gl.drawArrays(WebGL2RenderingContext.POINTS, 0, control_points_vertices);
+    // Clear background
+    vGL.context.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
+
+    // Draw spline and control points
+    vGL.drawSpline();
+    vGL.drawControlPoints();
 
     // Draw the point
-    const point0 = spline.getPoint(t);
-    const tangent0 = spline.getPointTangent(t);
+    const point0 = vSplineControl.spline.getPoint(t);
+    const tangent0 = vSplineControl.spline.getPointTangent(t);
     const tangent0_normalized = point0.add(tangent0.div(tangent0.mag()*5.0));
-    const point1 = spline.getPoint((t2) % 1.0);
-    const tangent1 = spline.getPointTangent((t2) % 1.0);
+    const point1 = vSplineControl.spline.getPoint((t2) % 1.0);
+    const tangent1 = vSplineControl.spline.getPointTangent((t2) % 1.0);
     const tangent1_normalized = point1.add(tangent1.div(tangent1.mag()*5.0));
     
     // Draw the tangent vector
     const data = new Float32Array(
-      [point0.x, point0.y, 1.0, 1.0, 1.0, tangent0_normalized.x, tangent0_normalized.y, 1.0, 1.0, 1.0, 
+      [point0.x, point0.y, 1.0, 1.0, 1.0, tangent0_normalized.x, tangent0_normalized.y, 1.0, 1.0, 1.0,
        point1.x, point1.y, 0.0, 1.0, 1.0, tangent1_normalized.x, tangent1_normalized.y, 0.0, 1.0, 1.0]);
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-    gl.enableVertexAttribArray(position);
-    gl.enableVertexAttribArray(color);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 10 * Float32Array.BYTES_PER_ELEMENT, 0 * Float32Array.BYTES_PER_ELEMENT);
-    gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 10 * Float32Array.BYTES_PER_ELEMENT, 2 * Float32Array.BYTES_PER_ELEMENT);
-    gl.uniform1f(pointZise_loc, pointSize + 5.0);
-    gl.drawArrays(WebGL2RenderingContext.POINTS, 0, 2);
+    vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_moving_points);
+    vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+    vGL.num_vertices_moving_points = 2;
 
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0 * Float32Array.BYTES_PER_ELEMENT);
-    gl.vertexAttribPointer(color, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 2 * Float32Array.BYTES_PER_ELEMENT);
-    
-    gl.drawArrays(WebGL2RenderingContext.LINES, 0, 4);
-
+    vGL.drawMovingPoint();
     await WebGLUtils.sleep(0.0);
   }
-  gl.deleteBuffer(pointBuffer);
 }
 
 function keyboardHandler(event:KeyboardEvent) {
   switch (event.key) {
   case "s":
-    animate_point = false;
+    animate_point = !animate_point;
+    if (animate_point) {
+      animate();
+    }
     break;
   case "ArrowLeft":
     break;
@@ -270,7 +358,6 @@ function keyboardHandler(event:KeyboardEvent) {
   default:
     break;
   }
-  console.log(event);
 }
 
 // Call the main function after the full load of the html page

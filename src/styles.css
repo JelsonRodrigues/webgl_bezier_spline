@@ -15,3 +15,8 @@ canvas {
 body {
   background-color: beige;
 }
+
+#textAndInput {
+  align-items: center;
+  text-align: center;
+}
