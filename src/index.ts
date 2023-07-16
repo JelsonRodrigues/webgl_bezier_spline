@@ -12,9 +12,9 @@ class HTMLElements {
   public curve_color : HTMLInputElement;
   public draw_control_points : HTMLInputElement;
   public draw_control_lines : HTMLInputElement;
-  public turn_g0 : HTMLButtonElement;
-  public turn_g1 : HTMLButtonElement;
-  public turn_g2 : HTMLButtonElement;
+  public turn_c0 : HTMLButtonElement;
+  public turn_c1 : HTMLButtonElement;
+  public turn_c2 : HTMLButtonElement;
   public animate_checkbox : HTMLButtonElement;
   public options_animation_div : HTMLDivElement;
   public time_for_animation : HTMLInputElement;
@@ -30,9 +30,9 @@ class HTMLElements {
     this.curve_color = document.getElementById("curvePointsColor") as HTMLInputElement;
     this.draw_control_points = document.getElementById("drawControlPoints") as HTMLInputElement;
     this.draw_control_lines = document.getElementById("drawControlLines") as HTMLInputElement;
-    this.turn_g0 = document.getElementById("turnG0Continuous") as HTMLButtonElement;
-    this.turn_g1 = document.getElementById("turnG1Continuous") as HTMLButtonElement;
-    this.turn_g2 = document.getElementById("turnG2Continuous") as HTMLButtonElement;
+    this.turn_c0 = document.getElementById("turnC0Continuous") as HTMLButtonElement;
+    this.turn_c1 = document.getElementById("turnC1Continuous") as HTMLButtonElement;
+    this.turn_c2 = document.getElementById("turnC2Continuous") as HTMLButtonElement;
     this.animate_checkbox = document.getElementById("animateCheckbox") as HTMLButtonElement;
     this.options_animation_div = document.getElementById("optionsAnimation") as HTMLDivElement;
     this.time_for_animation = document.getElementById("timeForAnimation") as HTMLInputElement;
@@ -361,7 +361,7 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
-  vHTMLElements.turn_g0.addEventListener("click", (event) => {
+  vHTMLElements.turn_c0.addEventListener("click", (event) => {
     const total_curves = vSplineControl.spline.getNumCurvesInSpline;
     if (total_curves <= 1) return;
 
@@ -378,19 +378,19 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
-  vHTMLElements.turn_g1.addEventListener("click", (event) => {
+  vHTMLElements.turn_c1.addEventListener("click", (event) => {
     const total_curves = vSplineControl.spline.getNumCurvesInSpline;
     if (total_curves <= 1) return;
 
     const spline = vSplineControl.spline;
 
     for (let i = 0; i < total_curves-1; ++i) {
-      // This turn G0
+      // This turn C0
       const curve_0 = spline.getCurveByIndex(i) as CubicBezierCurve;
       const curve_1 = spline.getCurveByIndex(i+1) as CubicBezierCurve;
       curve_1.changeControlPoint(0, curve_0.getPoint(1.0));
       
-      // This turn G1
+      // This turn C1
       curve_1.changeControlPoint(1, curve_0.getControlPoints[3].sub(curve_0.getControlPoints[2]).add(curve_1.getControlPoints[0]));
       spline.updateCurve(i+1, curve_1);
     }
@@ -399,23 +399,23 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
-  vHTMLElements.turn_g2.addEventListener("click", (event) => {
+  vHTMLElements.turn_c2.addEventListener("click", (event) => {
     const total_curves = vSplineControl.spline.getNumCurvesInSpline;
     if (total_curves <= 1) return;
 
     const spline = vSplineControl.spline;
 
     for (let i = 0; i < total_curves-1; ++i) {
-      // This turn G0
+      // This turn C0
       const curve_0 = spline.getCurveByIndex(i) as CubicBezierCurve;
       const curve_1 = spline.getCurveByIndex(i+1) as CubicBezierCurve;
       curve_1.changeControlPoint(0, curve_0.getPoint(1.0));
       
-      // This turn G1
+      // This turn C1
       const p3_sub_p2 = curve_0.getControlPoints[3].sub(curve_0.getControlPoints[2])
       curve_1.changeControlPoint(1, p3_sub_p2.add(curve_1.getControlPoints[0]));
 
-      // This turn G2
+      // This turn C2
       curve_1.changeControlPoint(2, curve_0.getControlPoints[1].add(p3_sub_p2.mul(4)));
 
       spline.updateCurve(i+1, curve_1);
