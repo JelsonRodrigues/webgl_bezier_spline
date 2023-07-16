@@ -84,6 +84,13 @@ export class Spline {
     return this.curves.length;
   }
 
+  public isC0Continuous() : boolean {
+    for (let i = 0; i < this.curves.length - 1; ++i) {
+      if (!this.curves[i].getPoint(1.0).equals(this.curves[i+1].getPoint(0.0))) return false;
+    }
+    return true;
+  }
+
   public get getPointsInSpline() : Array<Vec> | null { return this.array_points; }
   public set setNumPoints(value:number) { this.num_points_per_curve = value; this.sampleSpline(); }
   

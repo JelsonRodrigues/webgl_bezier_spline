@@ -79,4 +79,11 @@ export class Vec {
   public angleBetweenInDeg(other:Vec) : number {
     return this.angleBetweenInDeg(other) * 180.0 / Math.PI;
   }
+
+  public equals(ohter:Vec) : boolean {
+    return this.x == ohter.x &&
+      this.y == ohter.y && 
+      this.z == ohter.z && 
+      this.w == ohter.w;
+  }
 }

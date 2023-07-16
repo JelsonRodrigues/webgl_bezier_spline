@@ -6,7 +6,7 @@ import {CubicBezierCurve} from "./modules/CubicBezierCurve.js"
 
 class HTMLElements {
   public canvas : HTMLCanvasElement;
-  public value_t : HTMLParagraphElement;
+  public value_t : HTMLInputElement;
   public speed_t2 : HTMLInputElement;
   public add_curve : HTMLButtonElement;
   public curve_color : HTMLInputElement;
@@ -16,10 +16,11 @@ class HTMLElements {
   public turn_g1 : HTMLButtonElement;
   public animate_checkbox : HTMLButtonElement;
   public options_animation_div : HTMLDivElement;
+  public time_for_animation : HTMLInputElement;
 
   constructor () {
     this.canvas = document.getElementById("WebGLCanva") as HTMLCanvasElement;
-    this.value_t = document.getElementById("tValue") as HTMLParagraphElement;
+    this.value_t = document.getElementById("tValue") as HTMLInputElement;
     this.speed_t2 = document.getElementById("speed_multiplier") as HTMLInputElement;
     this.add_curve = document.getElementById("buttonAddCurve") as HTMLButtonElement;
     this.curve_color = document.getElementById("curvePointsColor") as HTMLInputElement;
@@ -29,6 +30,7 @@ class HTMLElements {
     this.turn_g1 = document.getElementById("turnG1Continuous") as HTMLButtonElement;
     this.animate_checkbox = document.getElementById("animateCheckbox") as HTMLButtonElement;
     this.options_animation_div = document.getElementById("optionsAnimation") as HTMLDivElement;
+    this.time_for_animation = document.getElementById("timeForAnimation") as HTMLInputElement;
   }
 }
 
@@ -104,10 +106,15 @@ class GL {
       2 * Float32Array.BYTES_PER_ELEMENT
     );
 
-    // Draw each curve separately
-    const points_per_curve = this.num_vertices_points_in_spline * 4.0 / this.num_vertices_control_points;
-    for (let i = 0; i < this.num_vertices_points_in_spline / points_per_curve; ++i) {
-      this.context.drawArrays(this.drawing_points_in_spline, i * points_per_curve , points_per_curve);
+    if (vSplineControl.spline.isC0Continuous()){
+      this.context.drawArrays(this.drawing_points_in_spline, 0, this.num_vertices_points_in_spline);
+    }
+    else {
+      // Draw each curve separately
+      const points_per_curve = this.num_vertices_points_in_spline * 4.0 / this.num_vertices_control_points;
+      for (let i = 0; i < this.num_vertices_points_in_spline / points_per_curve; ++i) {
+        this.context.drawArrays(this.drawing_points_in_spline, i * points_per_curve , points_per_curve);
+      }
     }
   }
 
@@ -233,6 +240,9 @@ var animating = false;
 var curve_color = new Vec(1.0, 0.0, 0.0);
 var draw_control_points = true;
 var draw_control_lines = true;
+var t = 0.0;
+var t2 = 0.0;
+var time_to_full_lap = 10; // 10s
 
 var control_points = new Array(
   {"point" : new Vec(0.0, 0.6),   "color" : new Vec(1.0, 0.0, 0.0)},
@@ -395,9 +405,59 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
+  vHTMLElements.turn_g1.addEventListener("click", (event) => {
+    const total_curves = vSplineControl.spline.getNumCurvesInSpline;
+    if (total_curves <= 1) return;
+
+    const spline = vSplineControl.spline;
+
+    for (let i = 0; i < total_curves-1; ++i) {
+      // This turn G0
+      const curve_0 = spline.getCurveByIndex(i) as CubicBezierCurve;
+      const curve_1 = spline.getCurveByIndex(i+1) as CubicBezierCurve;
+      curve_1.changeControlPoint(0, curve_0.getPoint(1.0));
+      
+      // This turn G1
+      curve_1.changeControlPoint(1, curve_0.getControlPoints[3].sub(curve_0.getControlPoints[2]).add(curve_1.getControlPoints[0]));
+      spline.updateCurve(i+1, curve_1);
+    }
+
+    addToGPUPointsInSpline();
+    drawFrame();
+  });
+
+
   vHTMLElements.animate_checkbox.addEventListener("change", (event) => {
     animate_checked();
   });
+
+  vHTMLElements.value_t.addEventListener("input", (event) => {
+    const element = event.target as HTMLInputElement;
+    t = parseFloat(element.value);
+
+    if (element.labels){
+      element.labels[0].textContent = `t = ${t.toFixed(2)}`;
+    }
+
+    // Recalculate position of the points
+    updateMovingPoints();
+    drawFrame();
+  });
+
+  vHTMLElements.time_for_animation.addEventListener("input", (event) => {
+    const element = event.target as HTMLInputElement;
+    time_to_full_lap = parseFloat(element.value);
+    if (element.labels){
+      element.labels[0].textContent = `Time for animation ${time_to_full_lap}s`
+    }
+  });
+}
+
+function updateTvalue(value:number) {
+  vHTMLElements.value_t.value = value.toFixed(2);
+  if (vHTMLElements.value_t.labels){
+    vHTMLElements.value_t.labels[0].textContent = `t = ${t.toFixed(2)}`;
+  }
 }
 
 function drawFrame() {
@@ -430,51 +490,53 @@ async function animate() {
     return;
   }
   animating = true;
-  let begin = new Date();
-  const time_to_full_lap = 10 * 1000.0; // 10s
-  let t = 0.0;
-  let t2 = 0.0;
+  let last = new Date();
   while (animate_point) {
     const now = new Date();
     const t2_speed = parseFloat(vHTMLElements.speed_t2.value);
-    t = ((now.getTime() - begin.getTime()) / time_to_full_lap) % 1.0;
-    t2 = ((now.getTime() - begin.getTime()) * t2_speed / time_to_full_lap) % 1.0;
+    t = (t + ((now.getTime() - last.getTime()) / (time_to_full_lap * 1000.0))) % 1.0;
+    t2 = (t2 + ((now.getTime() - last.getTime()) * t2_speed / (time_to_full_lap * 1000.0))) % 1.0;
     
-    vHTMLElements.value_t.innerText = `t = ${t.toFixed(2)} t' = ${t2.toFixed(2)}`;
+    updateTvalue(t);
 
-    // Update the point
-    const point0 = vSplineControl.spline.getPoint(t);
-    const point0_color = vSplineControl.spline.getColorInPoint(t);
-    const tangent0 = vSplineControl.spline.getPointTangent(t);
-    const tangent0_normalized = point0.add(tangent0.div(tangent0.mag()*5.0));
-    const point1 = vSplineControl.spline.getPoint((t2) % 1.0);
-    const point1_color = vSplineControl.spline.getColorInPoint(t2);
-    const tangent1 = vSplineControl.spline.getPointTangent((t2) % 1.0);
-    const tangent1_normalized = point1.add(tangent1.div(tangent1.mag()*5.0));
-    
-    // Draw the tangent vector
-    const data = new Float32Array(
-      [point0.x, point0.y, point0_color.x, point0_color.y, point0_color.z, tangent0_normalized.x, tangent0_normalized.y, 1.0, 1.0, 1.0,
-       point1.x, point1.y, point1_color.x, point1_color.y, point1_color.z, tangent1_normalized.x, tangent1_normalized.y, 1.0, 1.0, 1.0]);
-    vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_moving_points);
-    vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
-    vGL.num_vertices_moving_points = 2;
+    updateMovingPoints();
 
     drawFrame();
     await WebGLUtils.sleep(0.0);
+    last = now;
   }
   animating = false;
+}
+
+function updateMovingPoints() {
+  // Update the point
+  const point0 = vSplineControl.spline.getPoint(t);
+  const point0_color = vSplineControl.spline.getColorInPoint(t);
+  const tangent0 = vSplineControl.spline.getPointTangent(t);
+  const tangent0_normalized = point0.add(tangent0.div(tangent0.mag()*5.0));
+  const point1 = vSplineControl.spline.getPoint((t2) % 1.0);
+  const point1_color = vSplineControl.spline.getColorInPoint(t2);
+  const tangent1 = vSplineControl.spline.getPointTangent((t2) % 1.0);
+  const tangent1_normalized = point1.add(tangent1.div(tangent1.mag()*5.0));
+  
+  // Draw the tangent vector
+  const data = new Float32Array(
+    [point0.x, point0.y, point0_color.x, point0_color.y, point0_color.z, tangent0_normalized.x, tangent0_normalized.y, 1.0, 1.0, 1.0,
+      point1.x, point1.y, point1_color.x, point1_color.y, point1_color.z, tangent1_normalized.x, tangent1_normalized.y, 1.0, 1.0, 1.0]);
+  vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_moving_points);
+  vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+  vGL.num_vertices_moving_points = 2;
 }
 
 function animate_checked() {
   animate_point = !animate_point;
   if (animate_point){
     vHTMLElements.animate_checkbox.setAttribute("checked", "");
-    vHTMLElements.options_animation_div.style.display = "block";
+    // vHTMLElements.options_animation_div.style.display = "block";
   }
   else {
     vHTMLElements.animate_checkbox.removeAttribute("checked");
-    vHTMLElements.options_animation_div.style.display = "none";
+    // vHTMLElements.options_animation_div.style.display = "none";
   }
   if (animate_point && !animating) {
     animate();

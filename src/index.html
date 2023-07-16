@@ -29,13 +29,18 @@
       <button id="turnG1Continuous">Turn G1 Continuous</button>
     </div>
 
-
-    
     <div id="animationSettings" style="margin-top: 25px;">  
     <input type="checkbox" id="animateCheckbox">
     <label for="animateCheckbox">Animate</label>
     <div id="optionsAnimation">
-      <p1 id="tValue">t = 0.0</p1>
+      <div>
+        <input type="range" name="timeForAnimation" id="timeForAnimation" min="1.0" max="60.0" value="15.0" step="0.5">
+        <label for="timeForAnimation">Time for animation 10s</label>
+      </div>
+      <div>
+        <input type="range" name="tValue" id="tValue" min="0.0" max="1.0" value="0.0" step="0.001">
+        <label for="tValue">t = 0.0</label>
+      </div>
       <div>
         <input type="range" name="t2_speed" id="speed_multiplier" min="0.0" max="5.0" value="1.41" step="0.1">
         <label for="speed_multiplier">1.41 speed multiplier</label>
