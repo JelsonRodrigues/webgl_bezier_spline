@@ -49,11 +49,13 @@ export class Spline {
     const increment = 1.0 / this.num_points_per_curve;
     this.curves.forEach((curve, index) => {
       let t = 0.0;
-      for (let i = 0; i <= this.num_points_per_curve; ++i){
+      for (let i = 0; i < this.num_points_per_curve; ++i){
         this.array_points[i + this.num_points_per_curve * index] = curve.getPoint(t);
         this.array_colors[i + this.num_points_per_curve * index] = curve.getColorInPoint(t);
         t += increment;
       }
+      // Ensure last point is t = 1.0
+      this.array_points[this.num_points_per_curve - 1 + this.num_points_per_curve * index] = this.curves[index].getPoint(1.0);
     });
   }
   
@@ -74,10 +76,39 @@ export class Spline {
 
     const increment = 1.0 / this.num_points_per_curve;
     let t = 0.0;
-    for (let i = 0; i <= this.num_points_per_curve; ++i){
+    for (let i = 0; i < this.num_points_per_curve; ++i){
       this.array_points[i + this.num_points_per_curve * index] = this.curves[index].getPoint(t);
       t += increment;
     }
+    // Ensure last point is t = 1.0
+    this.array_points[this.num_points_per_curve - 1 + this.num_points_per_curve * index] = this.curves[index].getPoint(1.0);
+  }
+
+  public updatePoint(index : number, new_point : Vec) : boolean {
+    if (index < 0 || index >= this.curves.length * 4) { return false; }
+
+    const index_curve = Math.floor(index / 4);
+    const index_point_in_curve = index - index_curve * 4;
+
+    const curve = this.curves[index_curve];
+    curve.changeControlPoint(index_point_in_curve, new_point);
+
+    this.updateCurve(index_curve, curve);
+
+    return true;
+  }
+
+  public indexControlPoint(radius:number = 0.1, point : Vec) : number {
+    for (let i = 0; i < this.curves.length; ++i) {
+      for (let c = 0; c < 4; ++c) {
+        const dist = point.sub(this.curves[i].getControlPoints[c]).mag();
+        if ( dist <= radius ) {
+          return i * 4 + c;
+        }
+      }
+    }
+
+    return -1;
   }
 
   public get getNumCurvesInSpline() : number {
@@ -86,9 +117,76 @@ export class Spline {
 
   public isC0Continuous() : boolean {
     for (let i = 0; i < this.curves.length - 1; ++i) {
-      if (!this.curves[i].getPoint(1.0).equals(this.curves[i+1].getPoint(0.0))) return false;
+      const equals = this.curves[i].getControlPoints[3].equals(this.curves[i+1].getControlPoints[0]);
+      if (!equals) return false;
     }
     return true;
+  }
+
+  public toOBJ() : string {
+    let res = "";
+    for (let i=0; i < this.curves.length; ++i) {
+      for (let c = 0; c < 4; ++c){
+        const control_point = this.curves[i].getControlPoints[c];
+        res += `v ${control_point.x} ${control_point.y} ${control_point.z}\n`;
+      }
+    }
+    for (let i=0; i < this.curves.length; ++i) {
+      for (let c = 0; c < 4; ++c){
+        const colors_points = this.curves[i].getControlPointsColor[c];
+        res += `c ${colors_points.x} ${colors_points.y} ${colors_points.z}\n`;
+      }
+    }
+    return res;
+  }
+
+  public static fromOBJ(obj : string, sampling_points : number = 128) : Spline {
+    let spline = new Spline(sampling_points);
+
+    const arrayVertices = new Array<Vec>();
+    const arrayColors = new Array<Vec>();
+    
+    obj.split("\n").forEach((line) => {
+      if (line[0] == "v"){
+        const values = line.split(" ");
+        if (values.length == 4){
+          let new_val = new Vec();
+          new_val.x = parseFloat(values[1]);
+          new_val.y = parseFloat(values[2]);
+          new_val.z = parseFloat(values[3]);
+          arrayVertices.push(new_val);
+        }
+      }
+      else if (line[0] == "c") {
+        const values = line.split(" ");
+        if (values.length == 4){
+          let new_val = new Vec();
+          new_val.x = parseFloat(values[1]);
+          new_val.y = parseFloat(values[2]);
+          new_val.z = parseFloat(values[3]);
+          arrayColors.push(new_val);
+        }
+      }
+    });
+
+    for (let i = 0; i < arrayVertices.length / 4; ++i){
+      if (i + 3 >= arrayVertices.length) break;
+
+      const curve = new CubicBezierCurve(
+        arrayVertices[i * 4 + 0],
+        arrayVertices[i * 4 + 1],
+        arrayVertices[i * 4 + 2],
+        arrayVertices[i * 4 + 3],
+        arrayColors[i * 4 + 0],
+        arrayColors[i * 4 + 1],
+        arrayColors[i * 4 + 2],
+        arrayColors[i * 4 + 3],
+      );
+      
+      spline.addCurve(curve);
+    }
+
+    return spline;
   }
 
   public get getPointsInSpline() : Array<Vec> | null { return this.array_points; }

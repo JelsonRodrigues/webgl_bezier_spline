@@ -14,9 +14,13 @@ class HTMLElements {
   public draw_control_lines : HTMLInputElement;
   public turn_g0 : HTMLButtonElement;
   public turn_g1 : HTMLButtonElement;
+  public turn_g2 : HTMLButtonElement;
   public animate_checkbox : HTMLButtonElement;
   public options_animation_div : HTMLDivElement;
   public time_for_animation : HTMLInputElement;
+  public saveOBJ: HTMLButtonElement;
+  public openOBJ: HTMLButtonElement;
+  public OBJfile: HTMLInputElement;
 
   constructor () {
     this.canvas = document.getElementById("WebGLCanva") as HTMLCanvasElement;
@@ -28,9 +32,13 @@ class HTMLElements {
     this.draw_control_lines = document.getElementById("drawControlLines") as HTMLInputElement;
     this.turn_g0 = document.getElementById("turnG0Continuous") as HTMLButtonElement;
     this.turn_g1 = document.getElementById("turnG1Continuous") as HTMLButtonElement;
+    this.turn_g2 = document.getElementById("turnG2Continuous") as HTMLButtonElement;
     this.animate_checkbox = document.getElementById("animateCheckbox") as HTMLButtonElement;
     this.options_animation_div = document.getElementById("optionsAnimation") as HTMLDivElement;
     this.time_for_animation = document.getElementById("timeForAnimation") as HTMLInputElement;
+    this.saveOBJ = document.getElementById("saveOBJ") as HTMLButtonElement;
+    this.openOBJ = document.getElementById("openOBJ") as HTMLButtonElement;
+    this.OBJfile = document.getElementById("objFile") as HTMLInputElement;
   }
 }
 
@@ -106,7 +114,8 @@ class GL {
       2 * Float32Array.BYTES_PER_ELEMENT
     );
 
-    if (vSplineControl.spline.isC0Continuous()){
+    const c0_cont = vSplineControl.spline.isC0Continuous();
+    if (c0_cont){
       this.context.drawArrays(this.drawing_points_in_spline, 0, this.num_vertices_points_in_spline);
     }
     else {
@@ -244,28 +253,6 @@ var t = 0.0;
 var t2 = 0.0;
 var time_to_full_lap = 10; // 10s
 
-var control_points = new Array(
-  {"point" : new Vec(0.0, 0.6),   "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.4, 0.4),   "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.4, 0.0),   "color" : new Vec(1.0, 0.0, 0.0)},
-  {"point" : new Vec(0.2, -0.2),  "color" : new Vec(1.0, 0.0, 0.0)},
-
-  {"point" : new Vec(0.2, -0.2),  "color" : new Vec(0.0, 0.0, 1.0)},
-  {"point" : new Vec(0.0, -0.4),  "color" : new Vec(0.0, 0.0, 1.0)},
-  {"point" : new Vec(-0.4, -0.4), "color" : new Vec(0.0, 0.0, 1.0)},
-  {"point" : new Vec(-0.6, 0.0),  "color" : new Vec(0.0, 0.0, 1.0)},
-
-  {"point" : new Vec(-0.6, 0.0),  "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.6, 0.4),  "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.9, 0.4),  "color" : new Vec(0.0, 1.0, 0.0)},
-  {"point" : new Vec(-0.7, 0.7),  "color" : new Vec(0.0, 1.0, 0.0)},
-  
-  {"point" : new Vec(-0.7, 0.7),  "color" : new Vec(0.5, 0.0, 0.5)},
-  {"point" : new Vec(-0.4, 0.9),  "color" : new Vec(0.5, 0.0, 0.5)},
-  {"point" : new Vec(-0.4, 0.6),  "color" : new Vec(0.5, 0.0, 0.5)},
-  {"point" : new Vec(-0.0, 0.6),  "color" : new Vec(0.5, 0.0, 0.5)},
-);
-
 async function main() {
   const vsSource = await WebGLUtils.readFile("./shaders/vertexShader.glsl");
   const fsSource = await WebGLUtils.readFile("./shaders/fragmentShader.glsl");
@@ -278,25 +265,6 @@ async function main() {
   resizeHandler();
 
   drawFrame();
-  
-  // vGL.drawing_points_in_spline = WebGL2RenderingContext.POINTS;
-  // Adição de curva ????
-  // for (let i = 0; i < control_points.length / 4; ++i) {
-  //   if (i + 3 >= control_points.length) { break; } 
-  //   vSplineControl.spline.addCurve(
-  //     new CubicBezierCurve(
-  //       control_points[i * 4 + 0].point,
-  //       control_points[i * 4 + 1].point,
-  //       control_points[i * 4 + 2].point,
-  //       control_points[i * 4 + 3].point,
-
-  //       control_points[i * 4 + 0].color,
-  //       control_points[i * 4 + 1].color,
-  //       control_points[i * 4 + 2].color,
-  //       control_points[i * 4 + 3].color,
-  //     )
-  //   );
-  // }
 }
 
 function addToGPUPointsInSpline() {
@@ -310,6 +278,8 @@ function addToGPUPointsInSpline() {
     bufferDataSplinePoints[i * 5 + 3] = vSplineControl.spline.array_colors[i].y;
     bufferDataSplinePoints[i * 5 + 4] = vSplineControl.spline.array_colors[i].z;
   }
+  
+  console.log(bufferDataSplinePoints);
 
   vGL.num_vertices_points_in_spline = vSplineControl.spline.array_points.length;
   vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_points_in_spline);
@@ -345,11 +315,15 @@ async function setupEventHandlers() {
   });
 
   vHTMLElements.add_curve.addEventListener("click", (event) => {
-    // Create 4 random points between -1.0 and 1.0;
-    const P0 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
-    const P1 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
-    const P2 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
-    const P3 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
+    const P0 = new Vec(-0.75, 0.9, 0.0);
+    const P1 = new Vec(-0.25, 0.9, 0.0);
+    const P2 = new Vec(0.25, 0.9, 0.0);
+    const P3 = new Vec(0.75, 0.9, 0.0);
+
+    // const P0 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
+    // const P1 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
+    // const P2 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
+    // const P3 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
 
     const new_curve = new CubicBezierCurve(
       P0, P1, P2, P3,
@@ -360,7 +334,6 @@ async function setupEventHandlers() {
     vSplineControl.spline.sampleSpline();
 
     addToGPUPointsInSpline();
-
     drawFrame();
   });
 
@@ -426,6 +399,32 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
+  vHTMLElements.turn_g2.addEventListener("click", (event) => {
+    const total_curves = vSplineControl.spline.getNumCurvesInSpline;
+    if (total_curves <= 1) return;
+
+    const spline = vSplineControl.spline;
+
+    for (let i = 0; i < total_curves-1; ++i) {
+      // This turn G0
+      const curve_0 = spline.getCurveByIndex(i) as CubicBezierCurve;
+      const curve_1 = spline.getCurveByIndex(i+1) as CubicBezierCurve;
+      curve_1.changeControlPoint(0, curve_0.getPoint(1.0));
+      
+      // This turn G1
+      const p3_sub_p2 = curve_0.getControlPoints[3].sub(curve_0.getControlPoints[2])
+      curve_1.changeControlPoint(1, p3_sub_p2.add(curve_1.getControlPoints[0]));
+
+      // This turn G2
+      curve_1.changeControlPoint(2, curve_0.getControlPoints[1].add(p3_sub_p2.mul(4)));
+
+      spline.updateCurve(i+1, curve_1);
+    }
+
+    addToGPUPointsInSpline();
+    drawFrame();
+  });
+
 
   vHTMLElements.animate_checkbox.addEventListener("change", (event) => {
     animate_checked();
@@ -451,6 +450,74 @@ async function setupEventHandlers() {
       element.labels[0].textContent = `Time for animation ${time_to_full_lap}s`
     }
   });
+
+  const func = (event : MouseEvent) => {
+    const x = (event.offsetX * 2 - vHTMLElements.canvas.width) / vHTMLElements.canvas.width;
+    const y = ((event.offsetY * 2 - vHTMLElements.canvas.height) / vHTMLElements.canvas.height) * -1;
+    
+    const point = new Vec(x, y);
+
+    vSplineControl.spline.updatePoint(vSplineControl.index_altering, point);
+
+    addToGPUPointsInSpline();
+    drawFrame();
+  };
+
+  vHTMLElements.canvas.addEventListener("mousedown", (event) => {
+    // Identify the index point
+    const x = (event.offsetX * 2 - vHTMLElements.canvas.width) / vHTMLElements.canvas.width;
+    const y = ((event.offsetY * 2 - vHTMLElements.canvas.height) / vHTMLElements.canvas.height) * -1;
+    
+    const point = new Vec(x, y);
+
+    vSplineControl.index_altering = vSplineControl.spline.indexControlPoint(0.015, point);
+
+    if (vSplineControl.index_altering >= 0){
+      vHTMLElements.canvas.addEventListener("mousemove", func);
+    }
+  });
+  
+  vHTMLElements.canvas.addEventListener("mouseup", (event) => {
+    vHTMLElements.canvas.removeEventListener("mousemove", func);
+    vSplineControl.index_altering = -1;
+  });
+
+  vHTMLElements.canvas.addEventListener("mouseleave", (event) => {
+    vHTMLElements.canvas.removeEventListener("mousemove", func);
+    vSplineControl.index_altering = -1;
+  });
+
+  vHTMLElements.saveOBJ.addEventListener("click", (event) => {
+    const res = vSplineControl.spline.toOBJ();
+    const blob = new Blob([res], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = "spline.obj";
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  vHTMLElements.openOBJ.addEventListener("click", (event) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.onchange = function() {
+      if (input.files){
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function() {
+          vSplineControl.spline = Spline.fromOBJ(reader.result as string);
+          vSplineControl.spline.sampleSpline();
+          addToGPUPointsInSpline();
+          drawFrame();
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  });
+
 }
 
 function updateTvalue(value:number) {
@@ -506,6 +573,7 @@ async function animate() {
     last = now;
   }
   animating = false;
+  drawFrame();
 }
 
 function updateMovingPoints() {
@@ -532,11 +600,9 @@ function animate_checked() {
   animate_point = !animate_point;
   if (animate_point){
     vHTMLElements.animate_checkbox.setAttribute("checked", "");
-    // vHTMLElements.options_animation_div.style.display = "block";
   }
   else {
     vHTMLElements.animate_checkbox.removeAttribute("checked");
-    // vHTMLElements.options_animation_div.style.display = "none";
   }
   if (animate_point && !animating) {
     animate();
