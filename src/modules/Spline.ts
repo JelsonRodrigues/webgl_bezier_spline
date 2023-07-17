@@ -99,7 +99,7 @@ export class Spline {
   }
 
   public indexControlPoint(radius:number = 0.1, point : Vec) : number {
-    for (let i = 0; i < this.curves.length; ++i) {
+    for (let i = this.curves.length - 1; i >= 0; --i) {
       for (let c = 0; c < 4; ++c) {
         const dist = point.sub(this.curves[i].getControlPoints[c]).mag();
         if ( dist <= radius ) {
