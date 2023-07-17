@@ -278,8 +278,6 @@ function addToGPUPointsInSpline() {
     bufferDataSplinePoints[i * 5 + 3] = vSplineControl.spline.array_colors[i].y;
     bufferDataSplinePoints[i * 5 + 4] = vSplineControl.spline.array_colors[i].z;
   }
-  
-  console.log(bufferDataSplinePoints);
 
   vGL.num_vertices_points_in_spline = vSplineControl.spline.array_points.length;
   vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_points_in_spline);
@@ -476,7 +474,6 @@ async function setupEventHandlers() {
       vHTMLElements.canvas.addEventListener("mousemove", func);
     }
   });
-  
   vHTMLElements.canvas.addEventListener("mouseup", (event) => {
     vHTMLElements.canvas.removeEventListener("mousemove", func);
     vSplineControl.index_altering = -1;
