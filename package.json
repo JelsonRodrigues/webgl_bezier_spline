@@ -1,0 +1,22 @@
+{
+  "name": "webgl_bezier_spline",
+  "version": "1.0.0",
+  "description": "To run first compile the files with `tsc`, to get the `.js` files, then open with VSCode's live server extension the `index.html` file.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JelsonRodrigues/webgl_bezier_spline.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JelsonRodrigues/webgl_bezier_spline/issues"
+  },
+  "homepage": "https://github.com/JelsonRodrigues/webgl_bezier_spline#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
