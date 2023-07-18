@@ -17,3 +17,4 @@ Now open your browser in the link `localhost:3000/index.html`
 
 # Demo
 ![Spline Sample](./assets/spline.png)
+![Interface Demo](./assets/Interface.png)
