@@ -15,6 +15,9 @@ class HTMLElements {
   public turn_c0 : HTMLButtonElement;
   public turn_c1 : HTMLButtonElement;
   public turn_c2 : HTMLButtonElement;
+  public turn_g0 : HTMLButtonElement;
+  public turn_g1 : HTMLButtonElement;
+  public turn_g2 : HTMLButtonElement;
   public animate_checkbox : HTMLButtonElement;
   public options_animation_div : HTMLDivElement;
   public time_for_animation : HTMLInputElement;
@@ -33,6 +36,9 @@ class HTMLElements {
     this.turn_c0 = document.getElementById("turnC0Continuous") as HTMLButtonElement;
     this.turn_c1 = document.getElementById("turnC1Continuous") as HTMLButtonElement;
     this.turn_c2 = document.getElementById("turnC2Continuous") as HTMLButtonElement;
+    this.turn_g0 = document.getElementById("turnG0Continuous") as HTMLButtonElement;
+    this.turn_g1 = document.getElementById("turnG1Continuous") as HTMLButtonElement;
+    this.turn_g2 = document.getElementById("turnG2Continuous") as HTMLButtonElement;
     this.animate_checkbox = document.getElementById("animateCheckbox") as HTMLButtonElement;
     this.options_animation_div = document.getElementById("optionsAnimation") as HTMLDivElement;
     this.time_for_animation = document.getElementById("timeForAnimation") as HTMLInputElement;
@@ -98,10 +104,10 @@ class GL {
 
     this.context.vertexAttribPointer(
       this.a_position, 
-      2, 
+      3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
+      6 * Float32Array.BYTES_PER_ELEMENT, 
       0 * Float32Array.BYTES_PER_ELEMENT
     );
 
@@ -110,8 +116,8 @@ class GL {
       3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
-      2 * Float32Array.BYTES_PER_ELEMENT
+      6 * Float32Array.BYTES_PER_ELEMENT, 
+      3 * Float32Array.BYTES_PER_ELEMENT
     );
 
     const c0_cont = vSplineControl.spline.isC0Continuous();
@@ -136,10 +142,10 @@ class GL {
 
     this.context.vertexAttribPointer(
       this.a_position, 
-      2, 
+      3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
+      6 * Float32Array.BYTES_PER_ELEMENT, 
       0 * Float32Array.BYTES_PER_ELEMENT
     );
 
@@ -148,8 +154,8 @@ class GL {
       3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
-      2 * Float32Array.BYTES_PER_ELEMENT
+      6 * Float32Array.BYTES_PER_ELEMENT, 
+      3 * Float32Array.BYTES_PER_ELEMENT
     );
 
     this.context.drawArrays(WebGL2RenderingContext.POINTS, 0, this.num_vertices_control_points);
@@ -164,10 +170,10 @@ class GL {
 
     this.context.vertexAttribPointer(
       this.a_position, 
-      2, 
+      3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      10 * Float32Array.BYTES_PER_ELEMENT, 
+      12 * Float32Array.BYTES_PER_ELEMENT, 
       0 * Float32Array.BYTES_PER_ELEMENT
     );
 
@@ -176,18 +182,18 @@ class GL {
       3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      10 * Float32Array.BYTES_PER_ELEMENT, 
-      2 * Float32Array.BYTES_PER_ELEMENT
+      12 * Float32Array.BYTES_PER_ELEMENT, 
+      3 * Float32Array.BYTES_PER_ELEMENT
     );
 
     this.context.drawArrays(WebGL2RenderingContext.POINTS, 0, this.num_vertices_moving_points);
 
     this.context.vertexAttribPointer(
       this.a_position, 
-      2, 
+      3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
+      6 * Float32Array.BYTES_PER_ELEMENT, 
       0 * Float32Array.BYTES_PER_ELEMENT
     );
 
@@ -196,8 +202,8 @@ class GL {
       3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
-      2 * Float32Array.BYTES_PER_ELEMENT
+      6 * Float32Array.BYTES_PER_ELEMENT, 
+      3 * Float32Array.BYTES_PER_ELEMENT
     );
 
     this.context.drawArrays(WebGL2RenderingContext.LINES, 0, this.num_vertices_moving_points * 2.0);
@@ -212,10 +218,10 @@ class GL {
 
     this.context.vertexAttribPointer(
       this.a_position, 
-      2, 
+      3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
+      6 * Float32Array.BYTES_PER_ELEMENT, 
       0 * Float32Array.BYTES_PER_ELEMENT
     );
 
@@ -224,8 +230,8 @@ class GL {
       3, 
       WebGL2RenderingContext.FLOAT, 
       false, 
-      5 * Float32Array.BYTES_PER_ELEMENT, 
-      2 * Float32Array.BYTES_PER_ELEMENT
+      6 * Float32Array.BYTES_PER_ELEMENT, 
+      3 * Float32Array.BYTES_PER_ELEMENT
     );
 
     this.context.drawArrays(WebGL2RenderingContext.LINES, 0, this.num_vertices_control_points);
@@ -261,6 +267,23 @@ async function main() {
   vGL = new GL(vHTMLElements.canvas.getContext("webgl2") as WebGL2RenderingContext, vsSource, fsSource);
   vSplineControl = new SplineControl();
 
+  // const perspective = [
+  //   0.5602530837059021, 0, 0, 0, 
+  //   0, 2.4142136573791504, 0, 0, 
+  //   0, 0, -1.0000200271606445, -1,
+  //   0, 0, -0.02000020071864128, 0
+  // ];
+
+  const perspective = [
+    1, 0, 0, 0,
+    0, 1, 0, 0, 
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  ]
+
+  const location = vGL.context.getUniformLocation(vGL.program, "u_projection");
+  vGL.context.uniformMatrix4fv(location, false, perspective, 0, perspective.length);
+
   setupEventHandlers();
   resizeHandler();
 
@@ -268,15 +291,16 @@ async function main() {
 }
 
 function addToGPUPointsInSpline() {
-  let bufferDataSplinePoints = new Float32Array(vSplineControl.spline.array_points.length * 5.0);
+  let bufferDataSplinePoints = new Float32Array(vSplineControl.spline.array_points.length * 6.0);
 
   for (let i = 0; i < vSplineControl.spline.array_points.length; ++i) {
-    bufferDataSplinePoints[i * 5 + 0] = vSplineControl.spline.array_points[i].x;
-    bufferDataSplinePoints[i * 5 + 1] = vSplineControl.spline.array_points[i].y;
+    bufferDataSplinePoints[i * 6 + 0] = vSplineControl.spline.array_points[i].x;
+    bufferDataSplinePoints[i * 6 + 1] = vSplineControl.spline.array_points[i].y;
+    bufferDataSplinePoints[i * 6 + 2] = vSplineControl.spline.array_points[i].z;
 
-    bufferDataSplinePoints[i * 5 + 2] = vSplineControl.spline.array_colors[i].x;
-    bufferDataSplinePoints[i * 5 + 3] = vSplineControl.spline.array_colors[i].y;
-    bufferDataSplinePoints[i * 5 + 4] = vSplineControl.spline.array_colors[i].z;
+    bufferDataSplinePoints[i * 6 + 3] = vSplineControl.spline.array_colors[i].x;
+    bufferDataSplinePoints[i * 6 + 4] = vSplineControl.spline.array_colors[i].y;
+    bufferDataSplinePoints[i * 6 + 5] = vSplineControl.spline.array_colors[i].z;
   }
 
   vGL.num_vertices_points_in_spline = vSplineControl.spline.array_points.length;
@@ -284,19 +308,20 @@ function addToGPUPointsInSpline() {
   vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, bufferDataSplinePoints, WebGL2RenderingContext.STATIC_DRAW);
 
   // Fill control points
-  let bufferDataControlPoints = new Float32Array(vSplineControl.spline.getNumCurvesInSpline * 4.0 * 5.0);
+  let bufferDataControlPoints = new Float32Array(vSplineControl.spline.getNumCurvesInSpline * 4.0 * 6.0);
   for (let i = 0; i < vSplineControl.spline.getNumCurvesInSpline; ++i) {
     const curve = vSplineControl.spline.getCurveByIndex(i) as CubicBezierCurve;
     const control_points = curve.getControlPoints as Array<Vec>;
     const colors_points = curve.getControlPointsColor as Array<Vec>;
 
     for (let c = 0; c < 4; ++c) {
-      bufferDataControlPoints[i * 20 + c * 5 + 0] = control_points[c].x;
-      bufferDataControlPoints[i * 20 + c * 5 + 1] = control_points[c].y;
+      bufferDataControlPoints[i * 24 + c * 6 + 0] = control_points[c].x;
+      bufferDataControlPoints[i * 24 + c * 6 + 1] = control_points[c].y;
+      bufferDataControlPoints[i * 24 + c * 6 + 2] = control_points[c].z;
 
-      bufferDataControlPoints[i * 20 + c * 5 + 2] = colors_points[c].x;
-      bufferDataControlPoints[i * 20 + c * 5 + 3] = colors_points[c].y;
-      bufferDataControlPoints[i * 20 + c * 5 + 4] = colors_points[c].z;
+      bufferDataControlPoints[i * 24 + c * 6 + 3] = colors_points[c].x;
+      bufferDataControlPoints[i * 24 + c * 6 + 4] = colors_points[c].y;
+      bufferDataControlPoints[i * 24 + c * 6 + 5] = colors_points[c].z;
     }
   }
   vGL.num_vertices_control_points = vSplineControl.spline.getNumCurvesInSpline * 4.0;
@@ -313,10 +338,10 @@ async function setupEventHandlers() {
   });
 
   vHTMLElements.add_curve.addEventListener("click", (event) => {
-    const P0 = new Vec(-0.75, 0.9, 0.0);
+    const P0 = new Vec(-0.75, 0.9, -0.5);
     const P1 = new Vec(-0.25, 0.9, 0.0);
-    const P2 = new Vec(0.25, 0.9, 0.0);
-    const P3 = new Vec(0.75, 0.9, 0.0);
+    const P2 = new Vec(0.25, 0.5, 0.0);
+    const P3 = new Vec(0.75, 0.9, 0.5);
 
     // const P0 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
     // const P1 = new Vec(Math.random() * 2.0 - 1.0, Math.random() * 2.0 - 1.0, 0.0);
@@ -423,6 +448,34 @@ async function setupEventHandlers() {
     drawFrame();
   });
 
+  vHTMLElements.turn_g0.addEventListener("click", (event) => {
+    vHTMLElements.turn_c0.click();
+  });
+
+  vHTMLElements.turn_g1.addEventListener("click", (event) => {
+    const total_curves = vSplineControl.spline.getNumCurvesInSpline;
+    if (total_curves <= 1) return;
+
+    const spline = vSplineControl.spline;
+
+    for (let i = 0; i < total_curves-1; ++i) {
+      // This turn G0
+      const curve_0 = spline.getCurveByIndex(i) as CubicBezierCurve;
+      const curve_1 = spline.getCurveByIndex(i+1) as CubicBezierCurve;
+      curve_1.changeControlPoint(0, curve_0.getPoint(1.0));
+
+      // This turn G1
+      const v = curve_0.getControlPoints[3].sub(curve_0.getControlPoints[2]);
+      const norm_v = v.div(v.mag());
+      const lengt_original = curve_1.getControlPoints[1].sub(curve_1.getControlPoints[0]).mag();
+
+      curve_1.changeControlPoint(1, curve_1.getControlPoints[0].add(norm_v.mul(lengt_original)));
+      spline.updateCurve(i+1, curve_1);
+    }
+
+    addToGPUPointsInSpline();
+    drawFrame();
+  });
 
   vHTMLElements.animate_checkbox.addEventListener("change", (event) => {
     animate_checked();
@@ -586,8 +639,8 @@ function updateMovingPoints() {
   
   // Draw the tangent vector
   const data = new Float32Array(
-    [point0.x, point0.y, point0_color.x, point0_color.y, point0_color.z, tangent0_normalized.x, tangent0_normalized.y, 1.0, 1.0, 1.0,
-      point1.x, point1.y, point1_color.x, point1_color.y, point1_color.z, tangent1_normalized.x, tangent1_normalized.y, 1.0, 1.0, 1.0]);
+    [point0.x, point0.y, point0.z, point0_color.x, point0_color.y, point0_color.z, tangent0_normalized.x, tangent0_normalized.y, tangent0_normalized.z, 1.0, 1.0, 1.0,
+      point1.x, point1.y, point1.z, point1_color.x, point1_color.y, point1_color.z, tangent1_normalized.x, tangent1_normalized.y, tangent1_normalized.z, 1.0, 1.0, 1.0]);
   vGL.context.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, vGL.buffer_moving_points);
   vGL.context.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
   vGL.num_vertices_moving_points = 2;
